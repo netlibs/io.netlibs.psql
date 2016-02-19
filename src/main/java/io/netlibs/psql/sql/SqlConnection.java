@@ -1,7 +1,6 @@
 package io.netlibs.psql.sql;
 
 import io.netlibs.psql.AbstractConnection;
-import io.netlibs.psql.QueryListener;
 import io.netlibs.psql.netty.handler.PostgreSQLClientNegotiation;
 import io.netlibs.psql.netty.handler.PostgreSQLDecoder;
 import io.netlibs.psql.netty.handler.PostgreSQLEncoder;
@@ -18,6 +17,7 @@ import io.netlibs.psql.wire.EmptyQueryResponse;
 import io.netlibs.psql.wire.ErrorResponse;
 import io.netlibs.psql.wire.Execute;
 import io.netlibs.psql.wire.NoticeResponse;
+import io.netlibs.psql.wire.NotificationResponse;
 import io.netlibs.psql.wire.ParameterStatus;
 import io.netlibs.psql.wire.PostgreSQLPacket;
 import io.netlibs.psql.wire.PostgreSQLPacketVisitor;
@@ -27,7 +27,6 @@ import io.netlibs.psql.wire.RowDescription;
 import io.netlibs.psql.wire.StartupMessage;
 import io.netlibs.psql.wire.UnknownMessage;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -35,8 +34,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import io.netty.util.concurrent.Promise;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -54,9 +51,12 @@ import lombok.extern.slf4j.Slf4j;
 public class SqlConnection extends AbstractConnection
 {
 
+  private SqlConnectionListener clistener;
+
   SqlConnection(SqlConnectionBuilder b)
   {
     super(b);
+    this.clistener = b.listener;
   }
 
   /**
@@ -82,6 +82,10 @@ public class SqlConnection extends AbstractConnection
         // no need to leave it laying around.
         ctx.channel().pipeline().remove(PostgreSQLClientNegotiation.class);
         handshakePromise.setSuccess(ctx.channel());
+        if (clistener != null)
+        {
+          clistener.ready();
+        }
       }
 
     }
@@ -110,9 +114,12 @@ public class SqlConnection extends AbstractConnection
     }
 
     @Override
-    public Void visitParameterStatus(ParameterStatus parameterStatus)
+    public Void visitParameterStatus(ParameterStatus p)
     {
-      // TODO Auto-generated method stub
+      if (clistener != null)
+      {
+        clistener.param(p.getKey(), p.getValue());
+      }
       return null;
     }
 
@@ -134,6 +141,16 @@ public class SqlConnection extends AbstractConnection
     public Void visitExecute(Execute execute)
     {
       // TODO Auto-generated method stub
+      return null;
+    }
+
+    @Override
+    public Void visitNotificationResponse(NotificationResponse e)
+    {
+      if (clistener != null)
+      {
+        clistener.notification(e);
+      }
       return null;
     }
 

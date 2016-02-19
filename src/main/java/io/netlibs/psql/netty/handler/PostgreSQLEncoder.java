@@ -15,6 +15,7 @@ import io.netlibs.psql.wire.EmptyQueryResponse;
 import io.netlibs.psql.wire.ErrorResponse;
 import io.netlibs.psql.wire.Execute;
 import io.netlibs.psql.wire.NoticeResponse;
+import io.netlibs.psql.wire.NotificationResponse;
 import io.netlibs.psql.wire.ParameterStatus;
 import io.netlibs.psql.wire.PostgreSQLPacket;
 import io.netlibs.psql.wire.PostgreSQLPacketVisitor;
@@ -170,6 +171,13 @@ public class PostgreSQLEncoder extends MessageToByteEncoder<PostgreSQLPacket>
       @Override
       public Void visitEmptyQueryResponse(EmptyQueryResponse emptyQueryResponse)
       {
+        return null;
+      }
+
+      @Override
+      public Void visitNotificationResponse(NotificationResponse e)
+      {
+        // TODO Auto-generated method stub
         return null;
       }
 

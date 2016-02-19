@@ -29,6 +29,8 @@ public enum MessageType
 
   RowDescription((byte) 'T'),
 
+  NotificationResponse((byte) 'A'),
+
   ;
 
   @Getter

@@ -13,6 +13,7 @@ import io.netlibs.psql.wire.CopyBothResponse.Format;
 import io.netlibs.psql.wire.CopyData;
 import io.netlibs.psql.wire.CopyDone;
 import io.netlibs.psql.wire.DataRow;
+import io.netlibs.psql.wire.NotificationResponse;
 import io.netlibs.psql.wire.ParameterStatus;
 import io.netlibs.psql.wire.PostgreSQLPacket;
 import io.netlibs.psql.wire.ReadyForQuery;
@@ -152,6 +153,13 @@ public class PostgreSQLDecoder extends ByteToMessageDecoder
       case RowDescription:
       {
         return new RowDescription(ProtoUtils.parseRowDescription(payload));
+      }
+      case NotificationResponse:
+      {
+        int processId = payload.readInt();
+        String name = ProtoUtils.parseString(payload);
+        String data = ProtoUtils.parseString(payload);
+        return new NotificationResponse(processId, name, data);
       }
 
     }

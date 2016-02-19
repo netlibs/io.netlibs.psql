@@ -29,14 +29,16 @@ public interface PostgreSQLPacketVisitor<T>
 
   T visitReadyForQuery(ReadyForQuery readyForQuery);
 
-  T visitRowDescription(RowDescription rowDescription);
+  T visitRowDescription(RowDescription e);
 
-  T visitStartupMessage(StartupMessage startupMessage);
+  T visitStartupMessage(StartupMessage e);
 
-  T visitQuery(Query query);
+  T visitQuery(Query e);
 
-  T visitExecute(Execute execute);
+  T visitExecute(Execute e);
 
-  T visitEmptyQueryResponse(EmptyQueryResponse emptyQueryResponse);
+  T visitEmptyQueryResponse(EmptyQueryResponse e);
+
+  T visitNotificationResponse(NotificationResponse e);
 
 }

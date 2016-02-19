@@ -83,7 +83,9 @@ public abstract class AbstractConnection implements AutoCloseable
 
   }
 
-  
+  /**
+   * blocks the caller until the connection is ready (or failed).
+   */
 
   public void sync()
   {
