@@ -9,6 +9,10 @@ public interface CopyDataContext
 
   void ack(long startingPosition);
 
+  /**
+   * request this copy context is closed.
+   */
+  
   void close();
 
 }

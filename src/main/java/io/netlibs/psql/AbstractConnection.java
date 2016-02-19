@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-public abstract class AbstractConnection implements AutoCloseable
+abstract class AbstractConnection implements AutoCloseable
 {
 
   private static final String DEFAULT_USERNAME = System.getProperty("user.name", "postgres");

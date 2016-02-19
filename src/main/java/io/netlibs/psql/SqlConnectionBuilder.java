@@ -1,6 +1,5 @@
-package io.netlibs.psql.sql;
+package io.netlibs.psql;
 
-import io.netlibs.psql.AbstractConnectionBuilder;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 

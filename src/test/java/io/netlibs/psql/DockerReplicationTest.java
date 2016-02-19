@@ -13,9 +13,6 @@ import com.jive.oss.junit.docker.DockerContainerRule;
 import com.jive.oss.junit.docker.ExtRunner;
 import com.jive.oss.junit.docker.RunIf;
 
-import io.netlibs.psql.replication.ReplicationConnection;
-import io.netlibs.psql.replication.ReplicationConnectionBuilder;
-
 @RunIf(DockerContainerRule.Available.class)
 @RunWith(ExtRunner.class)
 public class DockerReplicationTest
@@ -49,11 +46,9 @@ public class DockerReplicationTest
 
       CountDownLatch latch = new CountDownLatch(1);
 
-      ReplicationConnection conn = new ReplicationConnectionBuilder()
+      SqlConnection conn = new SqlConnectionBuilder()
           .username("jpgrepl-test-user")
           .database("jpgrepl-test")
-          .create("wal2json")
-          .slotId("my_slot_id")
           .newConnection(server.getHostName(), server.getPort());
       
       latch.await(5, TimeUnit.SECONDS);

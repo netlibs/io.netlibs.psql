@@ -49,15 +49,14 @@ public final class ReplicationPacketHandler extends SimpleChannelInboundHandler<
     {
       XLogData xlog = (XLogData) msg;
       head = xlog.getStartingPoint();
-      handle.data(xlog);
       log.debug("DATA received, position {}, tail {}", Long.toHexString(head), Long.toHexString(xlog.getCurrentEnd()));
+      // dispatch it.
+      handle.data(xlog);
     }
     else if (msg instanceof XKeepAlive)
     {
 
       XKeepAlive keepalive = (XKeepAlive) msg;
-
-      this.outputWrittenLsn = keepalive.getCurrentEnd();
 
       if (keepalive.isReply())
       {

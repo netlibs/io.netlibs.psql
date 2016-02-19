@@ -6,14 +6,14 @@ import java.util.Map;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
-public class AbstractConnectionBuilder<T>
+class AbstractConnectionBuilder<T>
 {
 
   private static final EventLoopGroup DEFAULT_EVENT_LOOP_GROUP = new NioEventLoopGroup();
 
-  public EventLoopGroup group = DEFAULT_EVENT_LOOP_GROUP;
-  public String username;
-  public String database;
+  EventLoopGroup group = DEFAULT_EVENT_LOOP_GROUP;
+  String username;
+  String database;
   Map<String, String> params = new HashMap<>();
 
   public T group(EventLoopGroup group)
@@ -27,7 +27,7 @@ public class AbstractConnectionBuilder<T>
     this.username = username;
     return (T) this;
   }
-  
+
   public T param(String key, String value)
   {
     this.params.put(key, value);

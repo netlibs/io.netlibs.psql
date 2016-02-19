@@ -1,8 +1,5 @@
-package io.netlibs.psql.sql;
+package io.netlibs.psql;
 
-import io.netlibs.psql.AbstractConnection;
-import io.netlibs.psql.CopyDataHandle;
-import io.netlibs.psql.QueryListener;
 import io.netlibs.psql.netty.handler.PostgreSQLClientNegotiation;
 import io.netlibs.psql.netty.handler.PostgreSQLDecoder;
 import io.netlibs.psql.netty.handler.PostgreSQLEncoder;
@@ -42,9 +39,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * A PostgreSQL SQL (as opposed to a replication) protocol connection.
- * 
- * This is the "standard" SQL interface to PostgreSQL.
+ * A PostgreSQL protocol connection. Can be used for replication and SQL connection.
  * 
  * If an error occurs, the connection is terminated. it doens't reconnect. use an SqlClient for higher level logic.
  * 
@@ -53,7 +48,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-public class SqlConnection extends AbstractConnection
+class SqlConnection extends AbstractConnection implements PostgresConnection
 {
 
   private SqlConnectionListener clistener;
@@ -63,7 +58,6 @@ public class SqlConnection extends AbstractConnection
     super(b);
     this.clistener = b.listener;
   }
-
 
   public <T extends QueryListener> T query(String query, T listener, CopyDataHandle handle)
   {
@@ -81,7 +75,7 @@ public class SqlConnection extends AbstractConnection
 
     if (handle != null)
     {
-      Channel channel = handshakePromise.getNow();     
+      Channel channel = handshakePromise.getNow();
       channel.pipeline().addBefore("handler", "copyhandle", new PostgreSQLReplicationCopyDataCodec());
       channel.pipeline().addLast(new ReplicationPacketHandler(handle));
       System.err.println(channel.pipeline());
@@ -93,8 +87,6 @@ public class SqlConnection extends AbstractConnection
 
   }
 
-  
-  
   /**
    * handler which dispatches events from the netty thread to the user thread.
    */

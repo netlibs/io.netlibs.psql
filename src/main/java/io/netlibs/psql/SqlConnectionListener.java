@@ -1,4 +1,4 @@
-package io.netlibs.psql.sql;
+package io.netlibs.psql;
 
 import io.netlibs.psql.wire.NotificationResponse;
 
