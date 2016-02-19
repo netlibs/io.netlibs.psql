@@ -48,12 +48,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 
 @Slf4j
-class SqlConnection extends AbstractConnection implements PostgresConnection
+class DefaultPostgresConnection extends AbstractConnection implements PostgresConnection
 {
 
-  private SqlConnectionListener clistener;
+  private PostgresConnectionListener clistener;
 
-  SqlConnection(SqlConnectionBuilder b)
+  DefaultPostgresConnection(PostgresConnectionBuilder b)
   {
     super(b);
     this.clistener = b.listener;
@@ -298,7 +298,7 @@ class SqlConnection extends AbstractConnection implements PostgresConnection
           {
             final ChannelPipeline p = ch.pipeline();
             p.addLast(new PostgreSQLDecoder(), new PostgreSQLEncoder());
-            p.addLast(new PostgreSQLClientNegotiation(SqlConnection.this.params));
+            p.addLast(new PostgreSQLClientNegotiation(DefaultPostgresConnection.this.params));
             p.addLast("handler", new Handler());
           }
         });

@@ -1,5 +1,12 @@
 package io.netlibs.psql;
 
+/**
+ * library side API passed to consumers for interacting with a COPY context.
+ * 
+ * @author theo
+ *
+ */
+
 public interface CopyDataContext
 {
 
@@ -12,7 +19,7 @@ public interface CopyDataContext
   /**
    * request this copy context is closed.
    */
-  
+
   void close();
 
 }

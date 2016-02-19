@@ -9,7 +9,7 @@ import io.netlibs.psql.wire.NotificationResponse;
  *
  */
 
-public interface SqlConnectionListener
+public interface PostgresConnectionListener
 {
 
   /**
@@ -31,7 +31,7 @@ public interface SqlConnectionListener
   void param(String key, String value);
 
   /**
-   * The connection was closed.  The connection is no longer usable.
+   * The connection was closed. The connection is no longer usable.
    */
 
   void closed();

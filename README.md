@@ -20,20 +20,36 @@ The initial driver for this code was to build a neo4j graph representation of an
 Rather than trying to keep applications in sync with full-text search indexes, a snapshot is used to build the initial index in bulk, then updates applied as micro batches.
  
 
-## Usage
+## Example Usage
 
+An odd example, as it blocks :=)
 
-	// 
-    ReplicationConnection conn = new ReplicationConnectionBuilder()
+    try (PostgresConnection conn = PostgresConnection.newBuilder()
         .username("theo")
-        .slotId("test_slot")
-        .create("wal2json")
         .database("theo")
-        .handler(new MyHandler())
-        .newConnection("192.168.182.130", 32820);
+        .listener(this)
+        .param("replication", "database")
+        .newConnection("192.168.182.130", 32820))
+ 
+    {
+
+      conn.sync();
+
+      Map<String, String> row = conn.query("IDENTIFY_SYSTEM", new SingleRowQueryCollector()).get();
+
+      String slotId = "xxxx";
+
+      System.err.println(conn.query(String.format("DROP_REPLICATION_SLOT %s", slotId), new SingleRowQueryCollector()).get());
+
+      Map<String, String> rows = conn.query(
+          new StringBuilder().append("CREATE_REPLICATION_SLOT ").append(slotId).append(" LOGICAL ").append("wal2json").toString(),
+          new SingleRowQueryCollector()).get();
+          
+      conn.query(String.format("START_REPLICATION SLOT %s LOGICAL 0/0", slotId), new SingleRowQueryCollector(), new MyHandle()).get();
+      conn.query(String.format("DROP_REPLICATION_SLOT %s", slotId), new SingleRowQueryCollector()).get();
 
 
-
+    }
 
 
 ## Logical WAL replication logic

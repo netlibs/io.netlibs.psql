@@ -46,7 +46,7 @@ public class DockerReplicationTest
 
       CountDownLatch latch = new CountDownLatch(1);
 
-      SqlConnection conn = new SqlConnectionBuilder()
+      DefaultPostgresConnection conn = new PostgresConnectionBuilder()
           .username("jpgrepl-test-user")
           .database("jpgrepl-test")
           .newConnection(server.getHostName(), server.getPort());
