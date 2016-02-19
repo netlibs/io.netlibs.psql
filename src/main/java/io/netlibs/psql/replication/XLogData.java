@@ -6,7 +6,6 @@ import lombok.Getter;
 import lombok.ToString;
 
 @Getter
-@ToString
 public class XLogData extends DefaultByteBufHolder implements ReplicationPacket
 {
 
@@ -22,5 +21,15 @@ public class XLogData extends DefaultByteBufHolder implements ReplicationPacket
     this.currentEnd = currentEnd;
     this.txtime = txtime;
   }
-  
+
+  @Override
+  public String toString()
+  {
+    return String.format("XLogData(startingPoint=%s, currentEnd=%s, txtime=%d, datalen=%d)",
+        Long.toHexString(startingPoint),
+        Long.toHexString(currentEnd),
+        txtime,
+        content().readableBytes());
+  }
+
 }
