@@ -67,6 +67,7 @@ public class SingleRowQueryCollector implements QueryListener
   @Override
   public void emptyResponse(EmptyQueryResponse e)
   {
+    future.complete(null);
   }
 
   @Override
@@ -88,7 +89,7 @@ public class SingleRowQueryCollector implements QueryListener
 
   @Override
   public void readyForQuery(ReadyForQuery e)
-  {
+  {    
   }
 
 }

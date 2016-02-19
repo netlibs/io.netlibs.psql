@@ -197,7 +197,7 @@ public class ReplicationConnection extends AbstractConnection
             p.addLast(new PostgreSQLClientNegotiation(ReplicationConnection.this.params));
             p.addLast(new PostgreSQLReplicationCopyDataCodec());
             p.addLast(new Handler());
-            p.addLast(new ReplicationPacketHandler());
+            p.addLast(new ReplicationPacketHandler(null));
           }
         });
 

@@ -7,12 +7,24 @@ import lombok.Value;
 public class CopyData implements PostgreSQLPacket
 {
 
-  private ByteBuf data;
+  private byte[] data;
+
+  public CopyData(ByteBuf buf)
+  {
+    this.data = new byte[buf.readableBytes()];
+    buf.readBytes(this.data);
+  }
 
   @Override
   public <T> T apply(PostgreSQLPacketVisitor<T> visitor)
   {
     return visitor.visitCopyData(this);
+  }
+
+  @Override
+  public String toString()
+  {
+    return String.format("CopyData(%d bytes)", data.length);
   }
 
 }

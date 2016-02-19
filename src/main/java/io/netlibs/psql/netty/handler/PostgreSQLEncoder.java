@@ -85,7 +85,7 @@ public class PostgreSQLEncoder extends MessageToByteEncoder<PostgreSQLPacket>
       public Void visitCopyData(CopyData copyData)
       {
         out.writeByte('d');
-        out.writeInt(copyData.getData().readableBytes() + 4);
+        out.writeInt(copyData.getData().length + 4);
         out.writeBytes(copyData.getData());
         return null;
       }

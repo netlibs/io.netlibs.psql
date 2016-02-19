@@ -6,6 +6,7 @@ import io.netlibs.psql.replication.XKeepAlive;
 import io.netlibs.psql.replication.XLogData;
 import io.netlibs.psql.wire.CopyData;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ public class PostgreSQLReplicationCopyDataCodec extends MessageToMessageCodec<Co
   protected void decode(ChannelHandlerContext ctx, CopyData msg, List<Object> out) throws Exception
   {
     
-    final ByteBuf copydata = msg.getData();
+    final ByteBuf copydata = Unpooled.wrappedBuffer(msg.getData());
     final byte type = copydata.readByte();
     
     switch (type)

@@ -11,6 +11,9 @@ public class XLogData implements ReplicationPacket
   private final long startingPoint;
   private final long currentEnd;
   // as microseconds since midnight on 2000-01-01.
-  private final long txtime;  
+  private final long txtime; 
+  
+  // the buffer of data.
+  
   private final ByteBuf byteBuf;
 }

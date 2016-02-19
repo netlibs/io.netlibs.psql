@@ -41,7 +41,7 @@ import io.netlibs.psql.wire.RowDescription;
 
 public interface QueryListener
 {
-
+  
   /**
    * The row description.
    */

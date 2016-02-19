@@ -2,6 +2,7 @@ package io.netlibs.psql;
 
 import java.util.HashMap;
 
+import io.netlibs.psql.replication.ReplicationPacketHandler;
 import io.netlibs.psql.wire.Query;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -20,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class AbstractConnection implements AutoCloseable
 {
-  
+
   private static final String DEFAULT_USERNAME = System.getProperty("user.name", "postgres");
 
   // the handshake promise. dispatched once the session is established.
@@ -39,7 +40,7 @@ public abstract class AbstractConnection implements AutoCloseable
     this.group = b.group;
 
     this.params.putAll(b.params);
-    
+
     if (b.username == null)
     {
       params.put("user", DEFAULT_USERNAME);
@@ -59,10 +60,9 @@ public abstract class AbstractConnection implements AutoCloseable
     }
 
     params.put("client_encoding", "UTF-8");
-    
+
   }
 
-  
   /**
    * Sends an SQL query on this connection, and streams the result to the given handler.
    */
@@ -84,7 +84,7 @@ public abstract class AbstractConnection implements AutoCloseable
     handshakePromise.getNow().writeAndFlush(new Query(query));
 
     return listener;
-    
+
   }
 
   /**

@@ -1,10 +1,14 @@
 package io.netlibs.psql.sql;
 
 import io.netlibs.psql.AbstractConnection;
+import io.netlibs.psql.CopyDataHandle;
+import io.netlibs.psql.QueryListener;
 import io.netlibs.psql.netty.handler.PostgreSQLClientNegotiation;
 import io.netlibs.psql.netty.handler.PostgreSQLDecoder;
 import io.netlibs.psql.netty.handler.PostgreSQLEncoder;
 import io.netlibs.psql.netty.handler.PostgreSQLHandshakeCompleteEvent;
+import io.netlibs.psql.netty.handler.PostgreSQLReplicationCopyDataCodec;
+import io.netlibs.psql.replication.ReplicationPacketHandler;
 import io.netlibs.psql.wire.AuthenticationOk;
 import io.netlibs.psql.wire.AuthenticationUnknown;
 import io.netlibs.psql.wire.BackendKeyData;
@@ -27,6 +31,7 @@ import io.netlibs.psql.wire.RowDescription;
 import io.netlibs.psql.wire.StartupMessage;
 import io.netlibs.psql.wire.UnknownMessage;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -59,6 +64,37 @@ public class SqlConnection extends AbstractConnection
     this.clistener = b.listener;
   }
 
+
+  public <T extends QueryListener> T query(String query, T listener, CopyDataHandle handle)
+  {
+
+    if (!this.handshakePromise.isSuccess())
+    {
+      throw new IllegalStateException();
+    }
+    if (this.listener != null)
+    {
+      throw new IllegalStateException("listener already active");
+    }
+
+    this.listener = listener;
+
+    if (handle != null)
+    {
+      Channel channel = handshakePromise.getNow();     
+      channel.pipeline().addBefore("handler", "copyhandle", new PostgreSQLReplicationCopyDataCodec());
+      channel.pipeline().addLast(new ReplicationPacketHandler(handle));
+      System.err.println(channel.pipeline());
+    }
+
+    handshakePromise.getNow().writeAndFlush(new Query(query));
+
+    return listener;
+
+  }
+
+  
+  
   /**
    * handler which dispatches events from the netty thread to the user thread.
    */
@@ -271,7 +307,7 @@ public class SqlConnection extends AbstractConnection
             final ChannelPipeline p = ch.pipeline();
             p.addLast(new PostgreSQLDecoder(), new PostgreSQLEncoder());
             p.addLast(new PostgreSQLClientNegotiation(SqlConnection.this.params));
-            p.addLast(new Handler());
+            p.addLast("handler", new Handler());
           }
         });
 
