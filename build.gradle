@@ -1,0 +1,66 @@
+
+buildscript {
+
+  repositories {
+    jcenter()    
+	mavenCentral()
+  }
+
+  dependencies {
+	classpath "com.prezi.pride:gradle-pride-plugin:0.11"
+  }
+
+}
+
+repositories {
+    jcenter()
+}
+
+apply plugin: 'java'
+apply plugin: 'maven-publish'
+apply plugin: 'pride'
+
+group = "io.netlibs.psql"
+version = '1.0-SNAPSHOT'
+
+task wrapper(type: Wrapper) {
+  gradleVersion = '2.8' 
+}
+
+configurations {
+    provided
+}
+
+sourceSets {	
+    main.compileClasspath += configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+}
+
+dependencies {
+
+    compile 'org.projectlombok:lombok:1.16.6'
+    compile 'io.netty:netty-all:4.1.0.CR2'
+    compile 'org.slf4j:slf4j-api:1.7.16'
+    
+    testCompile 'com.fasterxml.jackson.core:jackson-databind:2.6.2'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:3.2.0'
+    testCompile 'ch.qos.logback:logback-classic:1.1.3'
+    testCompile 'org.slf4j:jul-to-slf4j:1.7.12'
+	testCompile 'com.jive.oss.junit:junit-docker:1.0-SNAPSHOT'
+
+}
+
+compileJava {
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+        }
+    }
+}

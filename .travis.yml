@@ -1,0 +1,26 @@
+sudo: false
+language: java
+
+addons:
+  postgresql: "9.4"
+
+jdk:
+  - oraclejdk8
+
+before_script:
+  - createuser -U postgres jpgrepl
+  - createdb -U postgres -O jpgrepl jpgrepl
+  - psql -q -U rpgrepl -f .travis/v1.schema jpgrepl
+
+script: "mvn deploy --settings .travis/settings.xml"
+
+#install:
+#  - mvn package -DskipTests -B
+
+#after_success:
+#  ./.travis/artifact-upload.sh
+
+cache:
+  directories:
+    - '$HOME/.m2/repository'
+

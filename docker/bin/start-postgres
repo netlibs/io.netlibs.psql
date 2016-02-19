@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+#gosu postgres pg_ctl -D "$PGDATA" -w start
+
+#exec tail -F /var/log/postgresql/postgresql*.log
+
+exec gosu postgres postgres
