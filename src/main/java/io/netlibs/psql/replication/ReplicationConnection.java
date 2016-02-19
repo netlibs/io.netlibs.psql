@@ -1,37 +1,28 @@
 package io.netlibs.psql.replication;
 
-import java.util.HashMap;
-import java.util.concurrent.TimeUnit;
-
 import io.netlibs.psql.AbstractConnection;
 import io.netlibs.psql.WalPosition;
 import io.netlibs.psql.netty.handler.PostgreSQLClientNegotiation;
 import io.netlibs.psql.netty.handler.PostgreSQLDecoder;
 import io.netlibs.psql.netty.handler.PostgreSQLEncoder;
 import io.netlibs.psql.netty.handler.PostgreSQLHandshakeCompleteEvent;
+import io.netlibs.psql.netty.handler.PostgreSQLReplicationCopyDataCodec;
 import io.netlibs.psql.wire.CommandComplete;
-import io.netlibs.psql.wire.CopyData;
 import io.netlibs.psql.wire.PostgreSQLPacket;
 import io.netlibs.psql.wire.Query;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.ScheduledFuture;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * A postgresql replication protocol connection.
- * 
- * The connection is established, and then START_REPLICATION called with the given slot name and position.
  * 
  * If an error occurs, the connection is terminated.
  * 
@@ -43,47 +34,32 @@ import lombok.extern.slf4j.Slf4j;
 public class ReplicationConnection extends AbstractConnection
 {
 
-  private static final String DEFAULT_USERNAME = System.getProperty("user.name", "postgres");
-
-  private EventLoopGroup group;
-  private ChannelFuture connectFuture;
-  private HashMap<String, String> params = new HashMap<>();
   private final String slotId;
   private WalPosition position;
   private String create;
 
+  private ReplicationHandler handler;
+
   ReplicationConnection(ReplicationConnectionBuilder b)
   {
 
-    if (b.slotId == null)
+    super(b);
+
+    this.slotId = b.slotId;
+    this.position = b.position;
+    this.create = b.create;
+    this.handler = b.handler;
+
+    if (this.slotId == null)
     {
       throw new IllegalArgumentException("slotId");
     }
 
-    this.group = b.group;
-    this.slotId = b.slotId;
-    this.position = b.position;
-    this.create = b.create;
-
-    if (b.username == null)
+    if (this.handler == null)
     {
-      params.put("user", DEFAULT_USERNAME);
-    }
-    else
-    {
-      params.put("user", b.username);
+      throw new IllegalArgumentException("handler");
     }
 
-    if (b.database == null)
-    {
-      params.put("database", params.get("user"));
-    }
-    else
-    {
-      params.put("database", b.database);
-    }
-
-    params.put("client_encoding", "UTF-8");
     params.put("replication", "database");
 
   }
@@ -102,9 +78,7 @@ public class ReplicationConnection extends AbstractConnection
   private final class Handler extends SimpleChannelInboundHandler<PostgreSQLPacket>
   {
 
-    private long outputWrittenLsn;
     private ChannelHandlerContext ctx;
-    private ScheduledFuture<?> future;
 
     // note that any packets which contain byte buffers are NOT retained after we return, so need to copy if needed.
 
@@ -115,45 +89,6 @@ public class ReplicationConnection extends AbstractConnection
       if (msg instanceof CommandComplete)
       {
         this.nextStage();
-      }
-      else if (msg instanceof CopyData)
-      {
-
-        final ByteBuf copydata = ((CopyData) msg).getData();
-
-        final byte type = copydata.readByte();
-
-        switch (type)
-        {
-
-          case 'w': // data
-
-            final long startingPoint = copydata.readLong();
-            final long currentEnd = copydata.readLong();
-            final long txtime = copydata.readLong();
-
-            log.debug("DATA: {}, {}, {}", startingPoint, currentEnd, txtime);
-
-            // A single WAL record is never split across two XLogData messages. When a WAL record crosses a WAL page boundary, and
-            // is therefore already split using continuation records, it can be split at the page boundary. In other words, the first
-            // main WAL record and its continuation records can be sent in different XLogData messages.
-
-            XLogData data = new XLogData(startingPoint, currentEnd, txtime, copydata.slice());
-
-            break;
-
-          case 'k': // keepalive
-
-            this.processKeepalive(copydata);
-            log.debug("KEEPALIVE");
-            break;
-
-          default:
-            log.warn("Unknown type: '{}'", type);
-            break;
-
-        }
-
       }
       else
       {
@@ -228,57 +163,6 @@ public class ReplicationConnection extends AbstractConnection
 
     }
 
-    private void processKeepalive(final ByteBuf ptr)
-    {
-
-      final long currentEnd = ptr.readLong();
-      final long serverTimeMicros = ptr.readLong();
-
-      this.outputWrittenLsn = currentEnd;
-
-      final byte reply = ptr.readByte();
-
-      log.info(String.format("Current Time: %s, Server Time: %s, Reply? %s",
-          Long.toHexString(currentEnd),
-          Long.toString(serverTimeMicros),
-          Boolean.toString(reply != 0)));
-
-      if (reply == 1)
-      {
-        this.sendKeepalive();
-      }
-
-    }
-
-    /**
-     * While in CopyBoth mode, we need to send periodic keepalives.
-     */
-
-    private void sendKeepalive()
-    {
-
-      final long position = this.outputWrittenLsn;
-
-      log.debug("Sending Keepalive position={}", Long.toHexString(position));
-
-      // send feedback
-      final ByteBuf xkp = this.ctx.alloc().buffer();
-
-      xkp.writeByte('r');
-      xkp.writeLong(position);
-      xkp.writeLong(position);
-      xkp.writeLong(0);
-      xkp.writeLong(System.currentTimeMillis() * 1000); // micros since epoch
-      xkp.writeByte(0);
-
-      final ByteBuf xcd = this.ctx.alloc().buffer();
-      xcd.writeByte('d');
-      xcd.writeInt(xkp.readableBytes() + 4);
-      xcd.writeBytes(xkp);
-      ctx.writeAndFlush(xcd);
-
-    }
-
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception
     {
@@ -291,20 +175,6 @@ public class ReplicationConnection extends AbstractConnection
         nextStage();
       }
 
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception
-    {
-      this.future = ctx.executor().scheduleWithFixedDelay(this::sendKeepalive, 5, 5, TimeUnit.SECONDS);
-      super.channelActive(ctx);
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception
-    {
-      this.future.cancel(true);
-      super.channelInactive(ctx);
     }
 
   }
@@ -325,7 +195,9 @@ public class ReplicationConnection extends AbstractConnection
             p.addLast(new PostgreSQLDecoder());
             p.addLast(new PostgreSQLEncoder());
             p.addLast(new PostgreSQLClientNegotiation(ReplicationConnection.this.params));
+            p.addLast(new PostgreSQLReplicationCopyDataCodec());
             p.addLast(new Handler());
+            p.addLast(new ReplicationPacketHandler());
           }
         });
 
@@ -333,6 +205,5 @@ public class ReplicationConnection extends AbstractConnection
     this.connectFuture = b.connect(host, port);
 
   }
-
 
 }

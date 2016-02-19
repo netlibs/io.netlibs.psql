@@ -37,4 +37,6 @@ public interface PostgreSQLPacketVisitor<T>
 
   T visitExecute(Execute execute);
 
+  T visitEmptyQueryResponse(EmptyQueryResponse emptyQueryResponse);
+
 }

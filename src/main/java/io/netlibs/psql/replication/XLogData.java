@@ -2,42 +2,15 @@ package io.netlibs.psql.replication;
 
 import io.netty.buffer.ByteBuf;
 import lombok.ToString;
+import lombok.Value;
 
+@Value
 @ToString
-public class XLogData
+public class XLogData implements ReplicationPacket
 {
-
   private final long startingPoint;
   private final long currentEnd;
-  private final long txtime;
+  // as microseconds since midnight on 2000-01-01.
+  private final long txtime;  
   private final ByteBuf byteBuf;
-
-  public XLogData(final long startingPoint, final long currentEnd, final long txtime, final ByteBuf byteBuf)
-  {
-    this.startingPoint = startingPoint;
-    this.currentEnd = currentEnd;
-    this.txtime = txtime;
-    this.byteBuf = byteBuf;
-  }
-
-  public long getStartingPoint()
-  {
-    return this.startingPoint;
-  }
-
-  public long getCurrentEnd()
-  {
-    return this.currentEnd;
-  }
-
-  public long getTxTime()
-  {
-    return this.txtime;
-  }
-
-  public ByteBuf getByteBuf()
-  {
-    return this.byteBuf;
-  }
-
 }

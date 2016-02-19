@@ -3,7 +3,6 @@ package io.netlibs.psql.netty.handler;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.netlibs.psql.netty.MessageType;
 import io.netlibs.psql.netty.ProtoUtils;
 import io.netlibs.psql.wire.AuthenticationOk;
 import io.netlibs.psql.wire.AuthenticationUnknown;
@@ -22,19 +21,24 @@ import io.netlibs.psql.wire.UnknownMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * decode PostgreSQL messages.
  */
 
+@Slf4j
 public class PostgreSQLDecoder extends ByteToMessageDecoder
 {
+
+  // number of packets we allow before flushing.
+  private static final int BATCH_SIZE_MAX = 10000;
 
   @Override
   protected void decode(final ChannelHandlerContext ctx, final ByteBuf in, final List<Object> out) throws Exception
   {
 
-    while (in.readableBytes() >= 5)
+    while (in.readableBytes() >= 5 && out.size() < BATCH_SIZE_MAX)
     {
 
       final byte type = in.getByte(in.readerIndex());
@@ -50,9 +54,13 @@ public class PostgreSQLDecoder extends ByteToMessageDecoder
 
       final MessageType mtype = MessageType.getType(type);
 
-      final ByteBuf payload = in.readSlice(len - 4).retain();
+      final ByteBuf payload = in.readSlice(len - 4);
 
-      out.add(parse(mtype, payload));
+      PostgreSQLPacket packet = parse(mtype, payload);
+
+      log.trace("[{}] >>> {}", out.size(), packet);
+
+      out.add(packet);
 
     }
 
@@ -147,7 +155,7 @@ public class PostgreSQLDecoder extends ByteToMessageDecoder
       }
 
     }
-    return new UnknownMessage(mtype);
+    return new UnknownMessage(mtype.getType());
   }
 
   private static final CopyData parseCopyData(final ByteBuf buffer)

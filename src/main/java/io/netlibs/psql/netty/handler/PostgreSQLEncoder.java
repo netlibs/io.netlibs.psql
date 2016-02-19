@@ -11,6 +11,7 @@ import io.netlibs.psql.wire.CopyBothResponse;
 import io.netlibs.psql.wire.CopyData;
 import io.netlibs.psql.wire.CopyDone;
 import io.netlibs.psql.wire.DataRow;
+import io.netlibs.psql.wire.EmptyQueryResponse;
 import io.netlibs.psql.wire.ErrorResponse;
 import io.netlibs.psql.wire.Execute;
 import io.netlibs.psql.wire.NoticeResponse;
@@ -25,17 +26,21 @@ import io.netlibs.psql.wire.UnknownMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * encode PostgreSQL messages.
  */
 
+@Slf4j
 public class PostgreSQLEncoder extends MessageToByteEncoder<PostgreSQLPacket>
 {
 
   @Override
   protected void encode(ChannelHandlerContext ctx, PostgreSQLPacket msg, ByteBuf out) throws Exception
   {
+    
+    log.debug(" <<< {}", msg);
 
     msg.apply(new PostgreSQLPacketVisitor<Void>() {
 
@@ -78,6 +83,9 @@ public class PostgreSQLEncoder extends MessageToByteEncoder<PostgreSQLPacket>
       @Override
       public Void visitCopyData(CopyData copyData)
       {
+        out.writeByte('d');
+        out.writeInt(copyData.getData().readableBytes() + 4);
+        out.writeBytes(copyData.getData());
         return null;
       }
 
@@ -156,6 +164,12 @@ public class PostgreSQLEncoder extends MessageToByteEncoder<PostgreSQLPacket>
         out.writeBytes(execute.getCommand().getBytes(StandardCharsets.UTF_8));
         out.writeByte(execute.getMaxRows());
         out.setInt(pos, out.writerIndex() - pos);
+        return null;
+      }
+
+      @Override
+      public Void visitEmptyQueryResponse(EmptyQueryResponse emptyQueryResponse)
+      {
         return null;
       }
 

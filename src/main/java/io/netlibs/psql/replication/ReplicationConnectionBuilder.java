@@ -1,12 +1,13 @@
 package io.netlibs.psql.replication;
 
+import io.netlibs.psql.AbstractConnectionBuilder;
 import io.netlibs.psql.WalPosition;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
-public class ReplicationConnectionBuilder
+public class ReplicationConnectionBuilder extends AbstractConnectionBuilder<ReplicationConnectionBuilder>
 {
-  
+
   private static final EventLoopGroup DEFAULT_EVENT_LOOP_GROUP = new NioEventLoopGroup();
 
   EventLoopGroup group = DEFAULT_EVENT_LOOP_GROUP;
@@ -15,6 +16,7 @@ public class ReplicationConnectionBuilder
   String slotId;
   WalPosition position;
   String create;
+  ReplicationHandler handler;
 
   public ReplicationConnectionBuilder group(EventLoopGroup group)
   {
@@ -31,6 +33,12 @@ public class ReplicationConnectionBuilder
   public ReplicationConnectionBuilder database(String database)
   {
     this.database = database;
+    return this;
+  }
+
+  public ReplicationConnectionBuilder handler(ReplicationHandler handler)
+  {
+    this.handler = handler;
     return this;
   }
 

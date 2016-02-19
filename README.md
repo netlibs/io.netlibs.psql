@@ -22,12 +22,18 @@ Rather than trying to keep applications in sync with full-text search indexes, a
 
 ## Usage
 
+
+	// 
     ReplicationConnection conn = new ReplicationConnectionBuilder()
         .username("theo")
         .slotId("test_slot")
         .create("wal2json")
         .database("theo")
+        .handler(new MyHandler())
         .newConnection("192.168.182.130", 32820);
+
+
+
 
 
 ## Logical WAL replication logic

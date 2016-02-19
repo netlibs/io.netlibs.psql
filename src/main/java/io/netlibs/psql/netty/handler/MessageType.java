@@ -1,4 +1,6 @@
-package io.netlibs.psql.netty;
+package io.netlibs.psql.netty.handler;
+
+import lombok.Getter;
 
 public enum MessageType
 {
@@ -29,6 +31,7 @@ public enum MessageType
 
   ;
 
+  @Getter
   private byte type;
 
   MessageType(final byte type)
