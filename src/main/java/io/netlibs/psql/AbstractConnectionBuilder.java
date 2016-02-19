@@ -1,5 +1,8 @@
 package io.netlibs.psql;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
@@ -11,6 +14,7 @@ public class AbstractConnectionBuilder<T>
   public EventLoopGroup group = DEFAULT_EVENT_LOOP_GROUP;
   public String username;
   public String database;
+  Map<String, String> params = new HashMap<>();
 
   public T group(EventLoopGroup group)
   {
@@ -21,6 +25,12 @@ public class AbstractConnectionBuilder<T>
   public T username(String username)
   {
     this.username = username;
+    return (T) this;
+  }
+  
+  public T param(String key, String value)
+  {
+    this.params.put(key, value);
     return (T) this;
   }
 

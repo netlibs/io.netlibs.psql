@@ -38,6 +38,8 @@ public abstract class AbstractConnection implements AutoCloseable
 
     this.group = b.group;
 
+    this.params.putAll(b.params);
+    
     if (b.username == null)
     {
       params.put("user", DEFAULT_USERNAME);
@@ -65,7 +67,7 @@ public abstract class AbstractConnection implements AutoCloseable
    * Sends an SQL query on this connection, and streams the result to the given handler.
    */
 
-  public void query(String query, QueryListener listener)
+  public <T extends QueryListener> T query(String query, T listener)
   {
 
     if (!this.handshakePromise.isSuccess())
@@ -81,6 +83,8 @@ public abstract class AbstractConnection implements AutoCloseable
 
     handshakePromise.getNow().writeAndFlush(new Query(query));
 
+    return listener;
+    
   }
 
   /**
