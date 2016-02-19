@@ -23,7 +23,17 @@ public final class ReplicationPacketHandler extends SimpleChannelInboundHandler<
   private long outputWrittenLsn;
   private ScheduledFuture<?> future;
   private CopyDataHandle handle;
+
+  /**
+   * The current head message we've received from the servr.
+   */
+
   private long head = 0;
+
+  /**
+   * How many messages we've had acked.
+   */
+
   private long acked = 0;
 
   public ReplicationPacketHandler(CopyDataHandle handle)
@@ -38,15 +48,9 @@ public final class ReplicationPacketHandler extends SimpleChannelInboundHandler<
     if (msg instanceof XLogData)
     {
       XLogData xlog = (XLogData) msg;
-
-      if (acked == 0)
-      {
-        acked = xlog.getStartingPoint();
-      }
-
       head = xlog.getStartingPoint();
       handle.data(xlog);
-      log.debug("{} bytes buffered", head - acked);
+      log.debug("DATA received, position {}, tail {}", Long.toHexString(head), Long.toHexString(xlog.getCurrentEnd()));
     }
     else if (msg instanceof XKeepAlive)
     {
@@ -89,6 +93,7 @@ public final class ReplicationPacketHandler extends SimpleChannelInboundHandler<
       // channelActvie() event has been fired already, which means this.channelActive() will
       // not be invoked. We have to initialize here instead.
       this.handle.init(this);
+      this.future = ctx.executor().scheduleWithFixedDelay(() -> this.sendKeepalive(ctx), 5, 5, TimeUnit.SECONDS);
     }
     else
     {
@@ -109,15 +114,32 @@ public final class ReplicationPacketHandler extends SimpleChannelInboundHandler<
   @Override
   public void channelInactive(ChannelHandlerContext ctx) throws Exception
   {
-    this.future.cancel(true);
+    if (this.future != null)
+    {
+      this.future.cancel(true);
+      this.future = null;
+    }
+
     super.channelInactive(ctx);
+  }
+
+  @Override
+  public void handlerRemoved(ChannelHandlerContext ctx) throws Exception
+  {
+    if (this.future != null)
+    {
+      this.future.cancel(true);
+      this.future = null;
+    }
+    super.handlerRemoved(ctx);
   }
 
   @Override
   public void ack(long startingPosition)
   {
-    this.acked = startingPosition;
-    log.debug("ACKing {} ({} buffered)", startingPosition, head - acked);
+    this.acked++;
+    this.outputWrittenLsn = startingPosition;
+    log.debug("ACKing position {}", Long.toHexString(outputWrittenLsn));
   }
 
   @Override
