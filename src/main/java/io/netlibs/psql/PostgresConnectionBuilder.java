@@ -11,7 +11,7 @@ public class PostgresConnectionBuilder extends AbstractConnectionBuilder<Postgre
     return this;
   }
 
-  public DefaultPostgresConnection newConnection(String host, int port)
+  public PostgresConnection newConnection(String host, int port)
   {
     DefaultPostgresConnection conn = new DefaultPostgresConnection(this);
     conn.connect(host, port);
